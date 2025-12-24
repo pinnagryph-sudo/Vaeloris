@@ -1,69 +1,52 @@
-// Vaeloris Encyclopedia Service Worker
-const CACHE_NAME = 'vaeloris-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;500;600;700&display=swap'
-];
+// Vaeloris Service Worker - Fixed for GitHub Pages
+const CACHE_NAME = 'vaeloris-v2';
 
-// Install event - cache assets
+// Install - cache the main page
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Caching app assets');
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Only cache the essentials with relative paths
+      return cache.addAll([
+        './',
+        './index.html'
+      ]);
     })
   );
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
+// Activate - clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((names) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
+        names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
       );
     })
   );
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch - try network first, fall back to cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response;
-      }
-      return fetch(event.request).then((response) => {
-        // Don't cache non-successful responses
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone);
+          });
         }
-        // Clone and cache the response
-        const responseToCache = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
         return response;
-      });
-    }).catch(() => {
-      // Return offline page if available
-      return caches.match('/');
-    })
+      })
+      .catch(() => {
+        // Network failed, try cache
+        return caches.match(event.request).then((cached) => {
+          // Return cached or fallback to main page
+          return cached || caches.match('./index.html');
+        });
+      })
   );
-});
-
-// Background sync for bookmarks (future feature)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-bookmarks') {
-    console.log('Syncing bookmarks...');
-  }
 });
