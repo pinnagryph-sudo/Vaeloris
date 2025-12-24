@@ -987,6 +987,8 @@
     .entry-content {
       animation: fadeIn 0.4s ease-out;
       max-width: 850px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     /* ==================== ENTRY HEADER ==================== */
@@ -1070,6 +1072,8 @@
       line-height: 1.85;
       color: var(--text-secondary);
       white-space: pre-line;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     .entry-text strong { color: var(--text-primary); }
 
@@ -1147,6 +1151,8 @@
       font-size: 15px;
       line-height: 1.75;
       color: var(--text-secondary);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     /* ==================== RELATED ENTRIES ==================== */
@@ -1397,10 +1403,25 @@
       #sidebar.collapsed { transform: translateX(-100%); width: 280px; min-width: 280px; }
       #toggle-btn { left: 0; }
       #toggle-btn:not(.collapsed) { left: 268px; }
-      #content { padding: 20px; }
-      .entry-title { font-size: 26px; }
-      .welcome-title { font-size: 28px; }
+      #content { padding: 16px; padding-top: 72px; }
+      .entry-title { font-size: 24px; word-wrap: break-word; }
+      .entry-text { font-size: 15px; }
+      .subsection-text { font-size: 14px; }
+      .welcome-title { font-size: 26px; }
       .keyboard-hints-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+      .stat-card { padding: 10px; }
+      .stat-value { font-size: 13px; }
+      .stat-label { font-size: 8px; }
+      .entry-content { max-width: 100%; }
+      .subsection { padding: 14px; }
+      .entry-meta-bar { gap: 10px; }
+      .meta-item { font-size: 10px; }
+      .action-btn { padding: 5px 10px; font-size: 11px; }
+      .related-links { gap: 8px; }
+      .related-link { padding: 8px 12px; font-size: 13px; }
+      .quick-ref-table { font-size: 11px; }
+      .quick-ref-table th, .quick-ref-table td { padding: 8px; }
     }
 
     /* ==================== SPECIAL CONTENT STYLES (from original) ==================== */

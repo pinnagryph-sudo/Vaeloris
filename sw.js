@@ -1,5 +1,5 @@
 // Vaeloris Service Worker - Fixed for GitHub Pages
-const CACHE_NAME = 'vaeloris-v8';
+const CACHE_NAME = 'vaeloris-v9';
 
 // Install - cache everything needed for offline
 self.addEventListener('install', (event) => {
