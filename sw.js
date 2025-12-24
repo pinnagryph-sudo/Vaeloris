@@ -1,5 +1,5 @@
 // Vaeloris Service Worker - Fixed for GitHub Pages
-const CACHE_NAME = 'vaeloris-v2';
+const CACHE_NAME = 'vaeloris-v3';
 
 // Install - cache the main page
 self.addEventListener('install', (event) => {
@@ -12,16 +12,22 @@ self.addEventListener('install', (event) => {
       ]);
     })
   );
+  // Activate immediately instead of waiting
   self.skipWaiting();
 });
 
-// Activate - clean old caches
+// Activate - clean old caches and notify clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((names) => {
       return Promise.all(
         names.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
       );
+    }).then(() => {
+      // Tell all clients to refresh
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'UPDATE_AVAILABLE' }));
+      });
     })
   );
   self.clients.claim();

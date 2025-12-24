@@ -115,6 +115,34 @@
     }
     .offline-indicator.show { display: block; }
     
+    .update-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-gold);
+      color: var(--bg-primary);
+      padding: 12px 20px;
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      gap: 15px;
+      box-shadow: var(--shadow);
+      z-index: 400;
+      font-size: 14px;
+    }
+    .update-prompt.show { display: flex; }
+    .update-prompt button {
+      background: var(--bg-primary);
+      color: var(--accent-gold);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .update-prompt button:hover { opacity: 0.9; }
+    
     @media (display-mode: standalone) {
       .mobile-header { display: flex !important; }
       #content { padding-top: 72px !important; }
@@ -1393,6 +1421,12 @@
 <body>
   <!-- Offline Indicator -->
   <div class="offline-indicator" id="offlineIndicator">📴 You're offline</div>
+
+  <!-- Update Prompt -->
+  <div class="update-prompt" id="updatePrompt">
+    <span>🔄 Update available!</span>
+    <button onclick="location.reload()">Refresh</button>
+  </div>
 
   <!-- Install Prompt -->
   <div class="install-prompt" id="installPrompt">
@@ -4377,6 +4411,7 @@ The defining feature of Pinnagryph facial anatomy.`,
           <button class="welcome-btn primary" onclick="navigateTo('overview')">📖 Start Reading</button>
           <button class="welcome-btn" onclick="randomEntry()">🎲 Random Entry</button>
           <button class="welcome-btn" onclick="showQuickReference()">📊 Quick Reference</button>
+          <button class="welcome-btn" id="welcomeInstallBtn" onclick="triggerInstall()" style="display:none">📲 Install App</button>
         </div>`;
       
       if (recentEntries.length) {
@@ -4414,6 +4449,7 @@ The defining feature of Pinnagryph facial anatomy.`,
       
       document.getElementById('content').innerHTML = html;
       renderNavigation();
+      setTimeout(updateInstallButton, 100);
     }
 
     // ==================== QUICK REFERENCE ====================
@@ -4854,8 +4890,35 @@ The defining feature of Pinnagryph facial anatomy.`,
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registered:', reg.scope))
+          .then(reg => {
+            console.log('Service Worker registered:', reg.scope);
+            
+            // Check for updates every 30 minutes
+            setInterval(() => reg.update(), 30 * 60 * 1000);
+          })
           .catch(err => console.log('Service Worker registration failed:', err));
+        
+        // Listen for update messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data?.type === 'UPDATE_AVAILABLE') {
+            document.getElementById('updatePrompt').classList.add('show');
+          }
+        });
+        
+        // Also check for waiting service worker on load
+        navigator.serviceWorker.ready.then(reg => {
+          if (reg.waiting) {
+            document.getElementById('updatePrompt').classList.add('show');
+          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                document.getElementById('updatePrompt').classList.add('show');
+              }
+            });
+          });
+        });
       });
     }
 
@@ -4865,16 +4928,31 @@ The defining feature of Pinnagryph facial anatomy.`,
     const installBtn = document.getElementById('installBtn');
     const installClose = document.getElementById('installClose');
 
+    // Capture the install prompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      // Show install prompt after a delay
-      setTimeout(() => {
-        if (!localStorage.getItem('vaeloris-install-dismissed')) {
-          installPrompt.classList.add('show');
-        }
-      }, 30000); // Show after 30 seconds
+      console.log('Install prompt captured');
+      
+      // Show install prompt immediately if not dismissed before
+      if (!localStorage.getItem('vaeloris-install-dismissed')) {
+        installPrompt.classList.add('show');
+      }
     });
+
+    // Also show install button in welcome screen if installable
+    function updateInstallButton() {
+      const welcomeInstallBtn = document.getElementById('welcomeInstallBtn');
+      if (welcomeInstallBtn) {
+        if (deferredPrompt) {
+          welcomeInstallBtn.style.display = 'inline-block';
+        } else if (window.matchMedia('(display-mode: standalone)').matches) {
+          welcomeInstallBtn.textContent = '✓ App Installed';
+          welcomeInstallBtn.disabled = true;
+          welcomeInstallBtn.style.opacity = '0.6';
+        }
+      }
+    }
 
     installBtn?.addEventListener('click', async () => {
       if (deferredPrompt) {
@@ -4893,6 +4971,19 @@ The defining feature of Pinnagryph facial anatomy.`,
       installPrompt.classList.remove('show');
       localStorage.setItem('vaeloris-install-dismissed', 'true');
     });
+
+    // Function to trigger install from welcome screen button
+    window.triggerInstall = async function() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast('App installed!', '✓');
+        }
+        deferredPrompt = null;
+        updateInstallButton();
+      }
+    };
 
     // Detect if running as installed app
     if (window.matchMedia('(display-mode: standalone)').matches) {
