@@ -4341,8 +4341,15 @@ The defining feature of Pinnagryph facial anatomy.`,
       
       if (entry.stats) {
         html += '<div class="stats-grid">';
-        for (const [label, value] of Object.entries(entry.stats)) {
-          html += `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`;
+        // Handle both array format [{label, value}] and object format {label: value}
+        if (Array.isArray(entry.stats)) {
+          entry.stats.forEach(stat => {
+            html += `<div class="stat-card"><div class="stat-label">${stat.label}</div><div class="stat-value">${stat.value}</div></div>`;
+          });
+        } else {
+          for (const [label, value] of Object.entries(entry.stats)) {
+            html += `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`;
+          }
         }
         html += '</div>';
       }
@@ -4577,8 +4584,14 @@ The defining feature of Pinnagryph facial anatomy.`,
       
       if (entry.stats) {
         md += `## Quick Stats\n\n`;
-        for (const [label, value] of Object.entries(entry.stats)) {
-          md += `- **${label}:** ${value}\n`;
+        if (Array.isArray(entry.stats)) {
+          entry.stats.forEach(stat => {
+            md += `- **${stat.label}:** ${stat.value}\n`;
+          });
+        } else {
+          for (const [label, value] of Object.entries(entry.stats)) {
+            md += `- **${label}:** ${value}\n`;
+          }
         }
         md += `\n`;
       }
