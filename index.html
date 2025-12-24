@@ -4760,7 +4760,7 @@ The defining feature of Pinnagryph facial anatomy.`,
       else if (e.key === 'q' || e.key === 'Q') showQuickReference();
       else if (e.key === 'm' || e.key === 'M') toggleReadingMode();
       else if (e.key === 'e' || e.key === 'E') { if (currentEntry) showExportModal(currentEntry); }
-      else if (e.key === 'Escape') { closeExportModal(); renderWelcome(); };
+      else if (e.key === 'Escape') { closeExportModal(); renderWelcome(); }
       else if (e.key === 'ArrowDown') {
         e.preventDefault();
         keyboardFocusIndex = Math.min(keyboardFocusIndex + 1, visibleEntries.length - 1);
