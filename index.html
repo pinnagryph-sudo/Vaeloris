@@ -4893,33 +4893,70 @@ The defining feature of Pinnagryph facial anatomy.`,
           .then(reg => {
             console.log('Service Worker registered:', reg.scope);
             
-            // Check for updates every 30 minutes
-            setInterval(() => reg.update(), 30 * 60 * 1000);
+            // Check for updates once on load (battery friendly)
+            reg.update();
+            
+            // Also check when app becomes visible again (user returns to app)
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') {
+                console.log('App visible - checking for updates');
+                reg.update();
+              }
+            });
+            
+            // Handle update found
+            reg.addEventListener('updatefound', () => {
+              console.log('Update found!');
+              const newWorker = reg.installing;
+              
+              newWorker.addEventListener('statechange', () => {
+                console.log('New worker state:', newWorker.state);
+                
+                if (newWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    // New version available
+                    console.log('New version ready - showing prompt');
+                    showUpdatePrompt();
+                  }
+                }
+              });
+            });
+            
+            // If there's already a waiting worker, show update prompt
+            if (reg.waiting) {
+              console.log('Worker already waiting - showing prompt');
+              showUpdatePrompt();
+            }
           })
           .catch(err => console.log('Service Worker registration failed:', err));
         
-        // Listen for update messages from service worker
+        // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data?.type === 'UPDATE_AVAILABLE') {
-            document.getElementById('updatePrompt').classList.add('show');
+          console.log('Message from SW:', event.data);
+          if (event.data?.type === 'UPDATE_ACTIVATED') {
+            // New version just activated - reload to get fresh content
+            showUpdatePrompt(true);
           }
         });
         
-        // Also check for waiting service worker on load
-        navigator.serviceWorker.ready.then(reg => {
-          if (reg.waiting) {
-            document.getElementById('updatePrompt').classList.add('show');
-          }
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                document.getElementById('updatePrompt').classList.add('show');
-              }
-            });
-          });
+        // Handle controller change (new SW took over)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('Controller changed - reloading');
+          window.location.reload();
         });
       });
+    }
+    
+    function showUpdatePrompt(autoReload = false) {
+      const prompt = document.getElementById('updatePrompt');
+      prompt.classList.add('show');
+      
+      // In installed app, can auto-reload after short delay
+      if (autoReload && window.matchMedia('(display-mode: standalone)').matches) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
     }
 
     // Install Prompt
